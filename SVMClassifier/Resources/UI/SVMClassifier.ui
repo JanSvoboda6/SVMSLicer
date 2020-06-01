@@ -47,6 +47,9 @@
           <height>28</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select Slice Numbers in format '99, 100, 101' or '99-101'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="acceptRichText">
          <bool>false</bool>
         </property>
@@ -54,6 +57,12 @@
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="trainingVolumeLabel">
+        <property name="toolTip">
+         <string/>
+        </property>
+        <property name="accessibleName">
+         <string/>
+        </property>
         <property name="text">
          <string>Training Volume:</string>
         </property>
@@ -71,7 +80,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Pick the output to the algorithm.</string>
+         <string>Select Training Mask.</string>
         </property>
         <property name="nodeTypes">
          <stringlist>
@@ -157,6 +166,9 @@
           <height>45</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>Select path to Feature Storage. Keep in mind that Feature Storage must be selected for proper features preparing and classyfing.</string>
+        </property>
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -180,7 +192,7 @@
          <bool>false</bool>
         </property>
         <property name="toolTip">
-         <string/>
+         <string>Select features.</string>
         </property>
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
@@ -365,7 +377,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Pick the input to the algorithm.</string>
+         <string>Select Training Volume.</string>
         </property>
         <property name="nodeTypes">
          <stringlist>
@@ -399,6 +411,9 @@
           <width>16777215</width>
           <height>25</height>
          </size>
+        </property>
+        <property name="toolTip">
+         <string>Select path to Feature Storage. Keep in mind that Feature Storage must be selected for proper features preparing and classyfing.</string>
         </property>
         <property name="text">
          <string>File Browser</string>
@@ -624,6 +639,9 @@
                <height>28</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Cache Size in Mb.</string>
+             </property>
              <property name="tabChangesFocus">
               <bool>false</bool>
              </property>
@@ -811,6 +829,9 @@
                <height>28</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>For maximum number of Parallel Jobs enter '-1'.</string>
+             </property>
              <property name="tabChangesFocus">
               <bool>false</bool>
              </property>
@@ -891,6 +912,9 @@
              <height>16777215</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select Validation Volume (optional).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="nodeTypes">
             <stringlist>
              <string>vtkMRMLScalarVolumeNode</string>
@@ -927,6 +951,9 @@
              <height>28</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select Slice Numbers in format '99, 100, 101' or '99-101' (optional).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="acceptRichText">
             <bool>false</bool>
            </property>
@@ -949,6 +976,9 @@
              <width>16777215</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select Validation Mask (optional).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="nodeTypes">
             <stringlist>
@@ -1008,6 +1038,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>Select Prediction Volume.</string>
+        </property>
         <property name="nodeTypes">
          <stringlist>
           <string>vtkMRMLScalarVolumeNode</string>
@@ -1051,6 +1084,9 @@
           <height>28</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select Slice Numbers in format '99, 100, 101' or '99-101'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="acceptRichText">
          <bool>false</bool>
         </property>
@@ -1073,6 +1109,9 @@
           <width>16777215</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="toolTip">
+         <string>Select Prediction Mask.</string>
         </property>
         <property name="nodeTypes">
          <stringlist>

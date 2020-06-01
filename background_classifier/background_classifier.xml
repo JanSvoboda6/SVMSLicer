@@ -3,32 +3,29 @@
   <category></category>
   <index>0</index>
   <title>background_classifier</title>
-  <description><![CDATA[Apply a Gaussian blur to an image]]></description>
+  <description><![CDATA[Runs background logic for preparing and classifying data, it is depend on SVM Module which provides UI]]></description>
   <version>0.1.0.</version>
-  <documentation-url>https://github.com/lassoan/SlicerPythonCLIExample</documentation-url>
+  <documentation-url>https://github.com/JanSvoboda6/SVMSLicer</documentation-url>
   <license/>
-  <contributor>Andras Lasso (PerkLab)</contributor>
-  <acknowledgements><![CDATA[This work is part of the National Alliance for Medical Image Computing (NAMIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, Grant U54 EB005149.]]></acknowledgements>
+  <contributor>Jan Svoboda (Brno University of Technology)</contributor>
+  <acknowledgements><![CDATA[Brno University of Technology]]></acknowledgements>
   <parameters>
 	 <string>
       <name>operationType</name>
       <label>Operation Type</label>
       <index>1</index>
-      <description><![CDATA[Sigma value in physical units (e.g., mm) of the Gaussian kernel]]></description>
       <default></default>
     </string>
     <string>
       <name>pathToFeatureStorage</name>
       <label>Path to Feature Storage</label>
       <index>2</index>
-      <description><![CDATA[Sigma value in physical units (e.g., mm) of the Gaussian kernel]]></description>
       <default></default>
     </string>
 	<string>
       <name>pathToPredictionStorage</name>
       <label>Path to Prediction Storage</label>
       <index>3</index>
-      <description><![CDATA[Sigma value in physical units (e.g., mm) of the Gaussian kernel]]></description>
       <default>EMPTY_PATH</default>
     </string>
   </parameters>

@@ -6,18 +6,18 @@ from slicer.util import VTKObservationMixin
 import time
 
 # Dependency modules check
-# logging.info('-' * 30)
-# logging.info('SVM Module: There is check needed whether all dependency modules are installed...')
-# dependencyModules = ['scipy', 'scikit-learn', 'numpy', 'joblib', 'pickle']
-# for module in dependencyModules:
-#     try:
-#         module_obj = __import__(module)
-#         logging.info('Module {0} was succesfully imported.'.format(module))
-#     except ImportError:
-#         logging.info("Module {0} was not found.\n Attempting to install {0}...".format(module))
-#         slicer.util.pip_install(module)
-# logging.info('SVM Module: All dependency modules should be installed! To be sure, check logging messages above.')
-# logging.info('-' * 30)
+logging.info('-' * 30)
+logging.info('SVM Module: There is check needed whether all dependency modules are installed...')
+dependencyModules = ['scipy', 'scikit-learn', 'numpy', 'joblib', 'pickle']
+for module in dependencyModules:
+    try:
+        module_obj = __import__(module)
+        logging.info('Module {0} was succesfully imported.'.format(module))
+    except ImportError:
+        logging.info("Module {0} was not found.\n Attempting to install {0}...".format(module))
+        slicer.util.pip_install(module)
+logging.info('SVM Module: All dependency modules should be installed! To be sure, check logging messages above.')
+logging.info('-' * 30)
 
 # Import dependency modules used in this file
 import numpy as np
@@ -31,7 +31,7 @@ class SVMClassifier(ScriptedLoadableModule):
         self.parent.title = 'SVMClassifier'
         self.parent.categories = ['Segmentation']
         self.parent.dependencies = []
-        self.parent.contributors = ['Jan Svoboda (BUT Brno)']
+        self.parent.contributors = ['Jan Svoboda (Brno University of Technology)']
         self.parent.helpText = "SVM Classifier"
         self.parent.helpText += self.getDefaultModuleDocumentationLink()
         self.parent.acknowledgementText = 'BUT Brno'
@@ -188,7 +188,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.featureStoragePathText.setText('')
             self.showMessageBox(severity='WARNING', message='No file has been selected.')
         else:
-            logging.info('path:' + filePath)
             self.ui.featureStoragePathText.setText(filePath)
         self.updateStateOfFeatureCheckBoxes()
         self.updateStateOfPrepareFeaturesButton()
@@ -256,8 +255,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             }
             cliNode = slicer.cli.run(slicer.modules.background_classifier, parameters=cliNodeParameters)
             self.ui.featurePreparationProgressBar.setCommandLineModuleNode(cliNode)
-            logging.info(str(cliNode.GetErrorText()))
-            logging.info(str(cliNode.GetOutputText()))
             cliNode.AddObserver('ModifiedEvent', self.checkFeaturePreparationStatus)
         except Exception as e:
             self.updateStateOfPrepareFeaturesButton()
@@ -285,8 +282,8 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         }
 
     def fillFeatureStorageWithTrainingData(self, slices):
-        self.featureStorage['trainingData'] = self.getDataFromVolume(self.ui.trainingVolume.currentNode(), slices)
-        self.featureStorage['trainingMask'] = self.getDataFromVolume(self.ui.trainingMask.currentNode(), slices)
+        self.featureStorage['trainingData'] = self.getDataFromVolumeNode(self.ui.trainingVolume.currentNode(), slices)
+        self.featureStorage['trainingMask'] = self.getDataFromVolumeNode(self.ui.trainingMask.currentNode(), slices)
 
     def getCheckedFeatures(self):
         return {
@@ -302,8 +299,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def checkFeaturePreparationStatus(self, caller, event):
         if caller.IsA('vtkMRMLCommandLineModuleNode'):
-            # TODO: Delete logging
-            logging.info('Status is %s' % caller.GetStatusString())
             if caller.GetStatusString() == 'Completed':
                 try:
                     self.featureStorage = self.loadStorage(self.featureStoragePath)
@@ -329,8 +324,7 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           Features have been sucesfully prepared!
           Total time: ~ {} sec
           Size of whole feature vector: {} 
-          Size of a feature row: {}
-          For more information please look at full log message.\
+          Size of a feature row: {}\
           '''.format(int(time.time() - self.total_time), shapeOfFeatures[0], shapeOfFeatures[1])
         return message
 
@@ -343,11 +337,13 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.updateParametersState(True)
             self.ui.classifierPathText.enabled = False
             self.ui.classifierFileBrowseButton.enabled = False
+            self.onTrainingButtons()
 
         elif self.ui.saveClassifierButton.checked:
             self.updateParametersState(True)
             self.ui.classifierPathText.enabled = True
             self.ui.classifierFileBrowseButton.enabled = True
+            self.onTrainingButtons()
 
         elif self.ui.loadClassifierButton.checked:
             self.updateParametersState(False)
@@ -363,7 +359,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             widget.enabled = isEnabled
         self.ui.defaultTrainingButton.enabled = isEnabled
         self.ui.gridSearchTrainingButton.enabled = isEnabled
-        self.onTrainingButtons()
 
     def onTrainingButtons(self):
         if self.ui.defaultTrainingButton.checked:
@@ -410,6 +405,7 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.runClassifierButton.enabled = False
             self.fillPredictionStorageWithData()
             if not self.validateBeforeRunning():
+                self.updateStateOfRunClassifierButton()
                 return
             self.featureStoragePath = self.ui.featureStoragePathText.toPlainText()
             # predictionStorage is used just for saving data temporarily to be able to send data to cliNode,
@@ -422,7 +418,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 'pathToFeatureStorage': self.featureStoragePath,
                 'pathToPredictionStorage': self.predictionStoragePath
             }
-            # TODO: Make XML for background_classifier pretty
             cliNode = slicer.cli.run(slicer.modules.background_classifier, parameters=cliNodeParameters)
             cliNode.AddObserver('ModifiedEvent', self.checkClassifierStatus)
             self.ui.classifyingProgressBar.setCommandLineModuleNode(cliNode)
@@ -437,7 +432,7 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if not self.validateParametersValues(self.predictionStorage['parameters']):
             return False
 
-        if self.predictionStorage['validationVolume']:
+        if 'validationVolume' in self.predictionStorage:
             validationVolume = slicer.util.arrayFromVolume(self.ui.validationVolume.currentNode())
             validationMask = slicer.util.arrayFromVolume(self.ui.validationMask.currentNode())
             if not self.isShapeOfVolumesEqual(validationVolume, validationMask):
@@ -452,12 +447,9 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             logging.info('Status is %s' % caller.GetStatusString())
             if caller.GetStatusString() == 'Completed':
                 try:
-                    # TODO: Do not create empty mask, just change slices
-                    self.getEmptyPredictionMask()
                     self.predictionStorage = self.loadStorage(self.predictionStoragePath)
                     slicer.util.updateVolumeFromArray(self.ui.predictionMask.currentNode(),
                                                       self.predictionStorage['predictionMask'])
-                    logging.info('Should be done!')
                     slicer.util.setSliceViewerLayers(self.ui.predictionMask.currentNode())
                     slicer.util.resetSliceViews()
                     self.showMessageBox(severity='INFO', message=self.getAfterPredictionMessage())
@@ -481,7 +473,6 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             message += '\nBEST PARAMETERS:  C: {}   Gamma: {}'.format(
                 self.predictionStorage['bestParameters']['base_estimator__C'],
                 self.predictionStorage['bestParameters']['base_estimator__gamma'])
-        message += '\nFor more information please look at full log message.'
         return message
 
     def updateStateOfRunClassifierButton(self):
@@ -503,18 +494,18 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             predictionSlices = self.getParsedSlices(self.ui.predictionVolume.currentNode(),
                                                     self.ui.predictionSliceNumbersText.toPlainText())
-            self.predictionStorage = {'predictionData': self.getDataFromVolume(self.ui.predictionVolume.currentNode(),
-                                                                               predictionSlices),
+            self.predictionStorage = {'predictionData': self.getDataFromVolumeNode(self.ui.predictionVolume.currentNode(),
+                                                                                   predictionSlices),
                                       'predictionMask': self.getEmptyPredictionMask(),
                                       'predictionSlices': predictionSlices}
 
             if self.isValidationSetFilled():
                 validationSlices = self.getParsedSlices(self.ui.validationVolume.currentNode(),
                                                         self.ui.validationSliceNumbersText.toPlainText())
-                self.predictionStorage['validationData'] = self.getDataFromVolume(
+                self.predictionStorage['validationData'] = self.getDataFromVolumeNode(
                     self.ui.validationVolume.currentNode(),
                     validationSlices)
-                self.predictionStorage['validationMask'] = self.getDataFromVolume(
+                self.predictionStorage['validationMask'] = self.getDataFromVolumeNode(
                     self.ui.validationMask.currentNode(),
                     validationSlices)
                 self.predictionStorage['validationSlices'] = validationSlices
@@ -578,16 +569,16 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 if str(param) is '':
                     self.showMessageBox(severity='ERROR', message='One or more parameters is unfilled!')
                     return False
+        return True
 
     def getEmptyPredictionMask(self):
         # TODO: Just clean up slices that are for predicting, no need to make empty mask
-        # TODO: if predicting volume shape == mask volume shape ---> that means mask volume has been already created
+        # TODO: if prediction volume shape == mask volume shape ---> means that mask volume has been already created
         if self.ui.predictionMask.currentNode() is None:
             raise ValueError('Prediction mask is invalid')
         self.ui.predictionMask.currentNode().CopyOrientation(self.ui.predictionVolume.currentNode())
         mask_voxels = np.zeros(slicer.util.arrayFromVolume(self.ui.predictionVolume.currentNode()).shape)
         slicer.util.updateVolumeFromArray(self.ui.predictionMask.currentNode(), mask_voxels)
-        logging.info('prediction mask ' + str(slicer.util.arrayFromVolume(self.ui.predictionMask.currentNode()).shape))
         return slicer.util.arrayFromVolume(self.ui.predictionMask.currentNode())
 
     def isPredictionSetFilled(self):
@@ -604,10 +595,10 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # region UTILITY METHODS ===========================================================================================
 
-    def getDataFromVolume(self, volume, slices):
-        if volume.currentNode() is None:
+    def getDataFromVolumeNode(self, volumeNode, slices):
+        if volumeNode is None:
             raise ValueError('Volume is invalid')
-        voxels = slicer.util.arrayFromVolume(volume.currentNode())
+        voxels = slicer.util.arrayFromVolume(volumeNode)
         selected_voxels = voxels[slices][:][:]
         return selected_voxels
 
@@ -649,9 +640,8 @@ class SVMClassifierWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return [float(i) for i in text]
 
     def showMessageBox(self, severity, message):
-        if severity == 'INFO':
-            message = 'INFO: ' + message
-        elif severity == 'WARNING':
+        # INFO severity is default, INFO is not appended to the message
+        if severity == 'WARNING':
             message = 'Warning: ' + message
         elif severity == 'ERROR':
             message = 'Error: ' + message
