@@ -1119,7 +1119,7 @@
     </widget>
    </item>
    <item row="5" column="0" colspan="2">
-    <widget class="QPushButton" name="applyButton">
+    <widget class="QPushButton" name="runClassifierButton">
      <property name="enabled">
       <bool>false</bool>
      </property>
