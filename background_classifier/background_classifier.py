@@ -42,83 +42,102 @@ def prepareData(preparationType, storageNode, features):
         raise ValueError('Type of feature preparation is not valid!')
 
 
-def toSigned(slice):
-    minimum = np.min(slice)
+def toSigned(volumeSlice):
+    minimum = np.min(volumeSlice)
     if minimum < 0:
-        slice = slice + abs(minimum)
-    return slice
+        volumeSlice = volumeSlice + abs(minimum)
+    return volumeSlice
 
 
-def normalize(slice):
-    slice = slice.astype(np.float32)
-    slice /= np.max(slice)
-    return slice
+def normalize(volumeSlice):
+    # This method normalizes value of each pixel, converts slice to unsigned int
+    # to get only 256 possible pixel values and then normalizes values to range between 0-1
+    volumeSlice = volumeSlice.astype(np.float64)
+    volumeSlice /= np.max(volumeSlice)
+    volumeSlice *= 255
+
+    volumeSlice = volumeSlice.astype(np.uint8)
+
+    volumeSlice = volumeSlice.astype(np.float16)
+    volumeSlice /= 255
+    return volumeSlice
 
 
-def countGradient(slice):
-    # There is also gradient method in numpy module
+def equalizeHistogram(volumeSlice):
+    reshapedSlice = volumeSlice.ravel()
+    histogram, bins = np.histogram(reshapedSlice, bins=10, density=True)
+    cumSum = histogram.cumsum()
+    # Normalize cumulative sum, value at last index is maximum
+    cumSum /= cumSum[-1]
+    equalizedSlice = np.interp(reshapedSlice, bins[:-1], cumSum)
+    equalizedSlice = equalizedSlice / np.max(equalizedSlice)
+    return equalizedSlice.reshape(volumeSlice.shape)
+
+
+def countGradient(volumeSlice):
+    # There is also gradient method in numpy module but doesn't behave exactly same
     assert (MATRIX_SIZE % 2 == 1)
-    gradientsX = np.zeros((slice.shape[0], slice.shape[1]), dtype=np.float32)
-    gradientsY = np.zeros((slice.shape[0], slice.shape[1]), dtype=np.float32)
-    gradientsFeature = np.zeros((slice.size, MATRIX_SIZE, MATRIX_SIZE), dtype=np.float32)
+    gradientsX = np.zeros((volumeSlice.shape[0], volumeSlice.shape[1]), dtype=np.float32)
+    gradientsY = np.zeros((volumeSlice.shape[0], volumeSlice.shape[1]), dtype=np.float32)
+    gradientsFeature = np.zeros((volumeSlice.size, MATRIX_SIZE, MATRIX_SIZE), dtype=np.float32)
     middle = math.trunc(MATRIX_SIZE / 2)
 
-    for i in range(slice.shape[0]):
-        for j in range(slice.shape[1] - 1):
-            gradientsX[i, j + 1] = math.fabs((slice[i, j + 1]) - (slice[i, j]))
+    for i in range(volumeSlice.shape[0]):
+        for j in range(volumeSlice.shape[1] - 1):
+            gradientsX[i, j + 1] = math.fabs((volumeSlice[i, j + 1]) - (volumeSlice[i, j]))
 
-    for i in range(slice.shape[0] - 1):
-        for j in range(slice.shape[1]):
-            gradientsY[i + 1, j] = math.fabs((slice[i + 1, j]) - (slice[i, j]))
+    for i in range(volumeSlice.shape[0] - 1):
+        for j in range(volumeSlice.shape[1]):
+            gradientsY[i + 1, j] = math.fabs((volumeSlice[i + 1, j]) - (volumeSlice[i, j]))
 
     gradientsX = np.pad(gradientsX, middle, mode='constant')
     gradientsY = np.pad(gradientsY, middle, mode='constant')
     gradientsSum = (np.add(gradientsX, gradientsY)) / 2
     pixel = 0
-    for i in range(slice.shape[0]):
-        for j in range(slice.shape[1]):
+    for i in range(volumeSlice.shape[0]):
+        for j in range(volumeSlice.shape[1]):
             gradientsFeature[pixel] = gradientsSum[i:i + MATRIX_SIZE, j:j + MATRIX_SIZE]
             pixel += 1
     return gradientsFeature.reshape(-1, MATRIX_SIZE * MATRIX_SIZE)
 
 
-def gaussianFiltering(slice):
-    gaussian = ndimage.gaussian_filter(slice, sigma=2)
+def gaussianFiltering(volumeSlice):
+    gaussian = ndimage.gaussian_filter(volumeSlice, sigma=2)
     gaussian /= np.max(gaussian)
     return gaussian.ravel()
 
 
-def medianFiltering(slice):
-    median = ndimage.median_filter(slice, size=7)
+def medianFiltering(volumeSlice):
+    median = ndimage.median_filter(volumeSlice, size=MATRIX_SIZE)
     median /= np.max(median)
     return median.ravel()
 
 
-def sobelOperator(slice):
-    sobel = ndimage.sobel(slice)
+def sobelOperator(volumeSlice):
+    sobel = ndimage.sobel(volumeSlice)
     sobel /= np.max(sobel)
     return sobel.ravel()
 
 
-def mean(slice):
-    meanValue = ndimage.uniform_filter(slice, (MATRIX_SIZE, MATRIX_SIZE))
-    meanValue /= np.max(meanValue)
-    return meanValue.ravel()
+def mean(volumeSlice):
+    meanValues = ndimage.uniform_filter(volumeSlice, (MATRIX_SIZE, MATRIX_SIZE))
+    meanValues /= np.max(meanValues)
+    return meanValues.ravel()
 
 
-def variance(slice):
+def variance(volumeSlice):
     # Implementation of and alternative variance formula: var = sum(X^2)/N - μ^2
-    meanValue = ndimage.uniform_filter(slice, (MATRIX_SIZE, MATRIX_SIZE))
-    sqr_mean = ndimage.uniform_filter(slice ** 2, (MATRIX_SIZE, MATRIX_SIZE))
-    var = sqr_mean - meanValue ** 2
+    meanValues = ndimage.uniform_filter(volumeSlice, (MATRIX_SIZE, MATRIX_SIZE))
+    sqr_mean = ndimage.uniform_filter(volumeSlice ** 2, (MATRIX_SIZE, MATRIX_SIZE))
+    var = sqr_mean - meanValues ** 2
     var /= np.max(var)
     return var.ravel()
 
 
-def laplacian(slice):
-    laplacian = ndimage.laplace(slice, )
-    laplacian /= np.max(laplacian)
-    return laplacian.ravel()
+def laplacian(volumeSlice):
+    laplacianValues = ndimage.laplace(volumeSlice)
+    laplacianValues /= np.max(laplacianValues)
+    return laplacianValues.ravel()
 
 
 def extractChosenFeatures(data, chosen_features):
@@ -148,10 +167,11 @@ def prepareFeatures(inputSlices, chosenFeatures):
     features = []
     slicesPrepared = 0
     print('-' * 30)
-    for slice in inputSlices:
-        # This two methods are called by default
-        data = toSigned(slice)
+    for s in inputSlices:
+        # These two methods are called by default
+        data = toSigned(s)
         data = normalize(data)
+        data = equalizeHistogram(data)
         featureDictionary = extractChosenFeatures(data, chosenFeatures)
         for j in range(data.size):
             featureRow = []
@@ -210,41 +230,44 @@ def chooseTrainingType(TRAINING_TYPE, parameters):
 def classify(featureStorage, predictionStorage):
     isValidationSetPresent = None
     if 'validationFeatureVector' in predictionStorage:
-        isValidationSetPresent = True
+        isValidationSetPresent = True     
     TRAINING_TYPE = predictionStorage['TRAINING_TYPE']
     print('-' * 30)
     print('TRAINING TYPE: {0}'.format(TRAINING_TYPE))
+    print('-' * 30) 
     xTrain = featureStorage['trainingFeatureVector']
-    yTrain = featureStorage['trainingMaskVector']
+    yTrain = featureStorage['trainingMaskVector']  
+    # Standardize data
     scaler = preprocessing.StandardScaler().fit(xTrain)
     xTrain = scaler.transform(xTrain)
     xTrain = preprocessing.normalize(xTrain)
     xPrediction = scaler.transform(predictionStorage['predictionFeatureVector'])
     xPrediction = preprocessing.normalize(xPrediction)
-    xValidation = []
+    xValidation = []   
     if isValidationSetPresent:
         xValidation = scaler.transform(predictionStorage['validationFeatureVector'])
-        xValidation = preprocessing.normalize(xValidation)
-    print('-' * 30)
+        xValidation = preprocessing.normalize(xValidation)  
     clf = chooseTrainingType(TRAINING_TYPE, predictionStorage['parameters'])
-
     if TRAINING_TYPE != 'FROM_SAVED_CLASSIFIER':
         print('Training started...')
         startTime = time.time()
         clf.fit(xTrain, yTrain)
-        print('Training ended: %s' % (time.time() - startTime))
+        print('Training ended: {:.2f} s'.format(time.time() - start_time))
         print('-' * 30)
         if TRAINING_TYPE == 'GRID_SEARCH':
-            print('Best parameters')
-            print(clf.best_params_)
+            print("GRID SEARCH RESULTS\n")
             predictionStorage['bestParameters'] = clf.best_params_
+            print('Best parameters: {}\n'.format(clf.best_params_))
+            means = clf.cv_results_['mean_test_score']
+            for mean, params in zip(means, clf.cv_results_['params']):
+                print('Mean score: {:0.3f} Parameters: {}'.format(mean, params))
             print('-' * 30)
         if 'classifierPath' in predictionStorage['parameters']:
             print('Saving classifier...')
             startTime = time.time()
             # TODO: Check path, should i used os.path, not sure if this line would work on a mac)
             dump(clf, predictionStorage['parameters']['classifierPath'])
-            print('Saving  ended: %s' % (time.time() - startTime))
+            print('Saving  ended: {:.2f} s'.format(time.time() - start_time))
             print('-' * 30)
 
     if isValidationSetPresent:
@@ -271,7 +294,7 @@ def classify(featureStorage, predictionStorage):
     print('Predicting started...')
     startTime = time.time()
     predictedMasks = clf.predict(xPrediction)
-    print('Predicting ended: %s' % (time.time() - startTime))
+    print('Predicting ended: {:.2f} s'.format(time.time() - start_time))
     return predictedMasks
 
 
@@ -288,8 +311,7 @@ def prepareTrainingSet(featureStorage, pathToFeatureStorage):
         featureStorage['trainingMaskVector'] = mask
         featureStorage['trainingMaskVector'] = mask
     else:
-        featureStorage['trainingFeatureVector'] = np.append(featureStorage['trainingFeatureVector'], features,
-                                                            axis=0)
+        featureStorage['trainingFeatureVector'] = np.append(featureStorage['trainingFeatureVector'], features, axis=0)
         featureStorage['trainingMaskVector'] = np.append(featureStorage['trainingMaskVector'], mask)
     saveStorageNode(featureStorage, pathToFeatureStorage)
 
